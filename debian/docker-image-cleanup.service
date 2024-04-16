@@ -1,0 +1,11 @@
+[Unit]
+Description=Delete Docker images that are not tagged
+Documentation=https://github.com/stanford-rc/docker-image-cleanup
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/docker-image-cleanup.py
+
+[Install]
+WantedBy=multi-user.target

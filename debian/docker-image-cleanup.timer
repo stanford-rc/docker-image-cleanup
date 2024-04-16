@@ -1,0 +1,8 @@
+[Unit]
+Description=Run docker-image-cleanup every day at 3 AM.
+
+[Timer]
+OnCalendar=*-*-* 3:00:00
+
+[Install]
+WantedBy=multi-user.target
