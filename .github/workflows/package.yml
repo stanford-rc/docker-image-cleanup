@@ -1,0 +1,63 @@
+name: 'Build Packages'
+
+on: push
+
+permissions:
+  contents: read
+
+jobs:
+  Package:
+    name: Create Package for Branch
+    runs-on: ubuntu-latest
+    steps:
+      - id: sysprep
+        name: Prep system for dev work
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential debhelper devscripts python3
+
+      - id: checkout
+        name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          path: "source"
+          fetch-depth: 0
+        continue-on-error: false
+
+      - id: get_tag
+        name: Get most recent tag
+        run: |
+          cd source;
+          echo "tag=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
+        continue-on-error: false
+
+      - id: make_changelogs
+        name: Make changelog entries
+        env:
+          start: ${{ steps.get_tag.outputs.tag }}
+        run: |
+          cd source;
+          echo "Listing commits starting from ${start}";
+          for commit in $(git log --reverse --format="%h" ${start}..); do
+          echo "Adding changelog entry for commit ${commit}: $(git log -1 --pretty=%s ${commit})";
+          EMAIL=$(git log -1 --pretty=%ae ${commit}) \
+          NAME=$(git log -1 --pretty=%an ${commit}) \
+          dch --force-bad-version --newversion \
+          "$(git log -1 --date=format:%Y%m%d%H%M%S --pretty=99~git%cd.%h ${commit})" \
+          "$(git log -1 --pretty=%s ${commit})";
+          done
+        continue-on-error: false
+
+      - name: Build package (without signing)
+        run: |
+          cd source && \
+          debuild -us -uc
+        continue-on-error: false
+
+      - name: Upload Build Result as artifact
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: package
+          path: docker-image-cleanup*
+          if-no-files-found: error
+        continue-on-error: false
