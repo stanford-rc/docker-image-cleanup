@@ -1,0 +1,22 @@
+Source: docker-image-cleanup
+Section: python
+Priority: optional
+Maintainer: A. Karl Kornel <akkornel@stanford.edu>
+Build-Depends: debhelper (>= 13), devscripts, python3
+Standards-Version: 4.6.2
+X-Python-Version: >= 3.8
+
+Package: docker-image-cleanup
+Architecture: all
+Section: python
+Depends: docker.io, python3-docker, python3-systemd, python3, ${misc:Depends}
+Description: Delete Docker images that are not tagged
+ This Python script deletes all Docker images that do not have at least one tag.
+ It is designed to be run as a Systemd one-shot service, on a timer.
+ .
+ The script will error out if it tries to delete an untagged image that is in
+ use by a container.
+ .
+ The script also has a nasty habit of deleting manually-build container images,
+ if those images are not tagged in some way.  So, maybe avoid using this on
+ certain development anmachines
