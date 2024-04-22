@@ -57,7 +57,7 @@ jobs:
       - name: Upload Build Result as artifact
         uses: actions/upload-artifact@v4.3.1
         with:
-          name: package
+          name: package-deb
           path: docker-image-cleanup*
           if-no-files-found: error
         continue-on-error: false
