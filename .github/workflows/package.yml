@@ -61,3 +61,56 @@ jobs:
           path: docker-image-cleanup*
           if-no-files-found: error
         continue-on-error: false
+
+  Sign-Debian:
+    name: Sign Debian packages
+    if: github.event_name == 'push' && ( contains(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' )
+    needs:
+      - Package
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    environment: sign
+    steps:
+      - id: sysprep
+        name: Prep system for debsign work
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential devscripts gnupg
+        continue-on-error: false
+
+      - id: set-key
+        name: Install signing key
+        env:
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+        run: |
+          gpg --import <<<"${PRIVATE_KEY}"
+          echo "Keys:"
+          gpg --list-secret-keys --keyid-format long
+          echo "keyid=$(gpg --list-secret-keys --keyid-format long | grep '^sec' | cut -d/ -f2 | cut -d\  -f1)" >> $GITHUB_OUTPUT
+          echo "fingerprint=$(gpg --list-secret-keys | grep '^      ' | tr -d ' ')" >> $GITHUB_OUTPUT
+        continue-on-error: false
+
+      - id: fetch
+        name: Fetch Debian artifact from this workflow
+        uses: actions/download-artifact@v4.1.7
+        with:
+          name: package-deb
+        continue-on-error: false
+
+      - id: sign
+        name: Run debsign
+        run: |
+          echo "Signing with key ${{ steps.set-key.outputs.keyid }}"
+          debsign -k "${{ steps.set-key.outputs.fingerprint }}" "$(find . -name *.changes)"
+        continue-on-error: false
+
+      - id: upload
+        name: Upload Signed Result as artifact
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: signed-deb
+          path: docker-image-cleanup*
+          if-no-files-found: error
+        continue-on-error: false
