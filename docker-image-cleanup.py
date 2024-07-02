@@ -75,7 +75,7 @@ for image in client.images.list():
 	# Grab some common attributes
 	image_id = image.short_id
 	image_tags = image.tags
-	image_date = datetime.datetime.fromisoformat(i.attrs['Created'])
+	image_date = datetime.datetime.fromisoformat(image.attrs['Created'])
 	
 	# Does the image have tags?  If yes, keep the image
 	if len(image_tags) > 0:
