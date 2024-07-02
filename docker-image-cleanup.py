@@ -13,7 +13,6 @@ import sys
 # Third-party libraries
 import docker
 from docker.errors import DockerException
-import systemd.journal
 
 
 # Set up logging
