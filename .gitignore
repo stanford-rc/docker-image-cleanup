@@ -1,2 +1,7 @@
 # Vim files
 *.swp
+
+# venv files
+bin
+lib
+pyvenv.cfg
