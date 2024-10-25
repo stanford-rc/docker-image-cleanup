@@ -132,3 +132,42 @@ jobs:
           path: docker-image-cleanup*
           if-no-files-found: error
         continue-on-error: false
+
+  Tag-Release:
+    name: Turn a tag into a release
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    needs:
+      - Package
+      - Sign-Debian
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - id: fetch-message
+        name: Fetch the tag's message
+        env:
+          tag: ${{ github.ref_name }}
+        run: |
+          git tag --list ${tag} --format '%(contents)' > body.txt
+
+      - id: fetch-deb
+        name: Fetch Signed Debian artifact from this workflow
+        uses: actions/download-artifact@v4.1.7
+        with:
+          name: signed-deb
+        continue-on-error: false
+
+      - id: prep-upload
+        name: Prepare files to be uploaded to the release
+        run: |
+          mkdir upload
+          cp signed-deb/*.deb upload/
+          cd signed-deb && tar -tzf ../upload/deb-archive.tar.gz *
+
+      - id: make-release
+        name: Create Release for Tag
+        uses: ncipollo/release-action@v1.14.0
+        with:
+          artifacts: "upload/*"
+          bodyFile: "body.txt"
