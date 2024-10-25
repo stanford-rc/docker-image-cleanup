@@ -31,8 +31,26 @@ jobs:
           echo "tag=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
         continue-on-error: false
 
+      - id: make_changelogs_tags
+        name: Make changelog entries for all of our tags
+        run: |
+          cd source;
+          echo "Listing all tags, by tag date, oldest first";
+          echo "WARNING: dch does not let us specify a date";
+          for tag in $(git tag --list 'v*' -n0 --format='%(refname:strip=2)' --sort=taggerdate:iso8601); do
+          echo "Adding entry for tag ${tag}, from $(git tag --list ${tag} --format='%(taggername)') $(git tag --list ${tag} --format='%(taggeremail)')";
+          EMAIL=$(git tag --list ${tag} --format='%(taggeremail)') \
+          NAME=$(git tag --list ${tag} --format='%(taggername)') \
+          DATE=$(git tag --list ${tag} --format='%(taggerdate:rfc)') \
+          dch --force-bad-version --newversion \
+          "$(git tag --list v1 --format='%(refname:strip=2)' | sed "s|^v||")" \
+          "$(git tag --list ${tag} --format='%(contents)')";
+          done
+        continue-on-error: false
+
       - id: make_changelogs
-        name: Make changelog entries
+        name: Make changelog entries for commits to a branch
+        if: github.event_name == 'push' && ( ! contains(github.ref, 'refs/tags/') )
         env:
           start: ${{ steps.get_tag.outputs.tag }}
         run: |
